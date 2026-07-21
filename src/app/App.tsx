@@ -730,14 +730,15 @@ function CertModal({
             className="relative rounded overflow-hidden border mb-2 flex justify-center bg-black/40 cursor-zoom-in group"
             style={{ borderColor: "rgba(0,200,255,0.2)" }}
             onClick={() => {
-              const fullSrc = cert.image_url?.startsWith("http") ? cert.image_url : `http://localhost:3001${cert.image_url}`;
+              const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:3001";
+              const fullSrc = cert.image_url?.startsWith("http") ? cert.image_url : `${baseUrl}${cert.image_url}`;
               if (onOpenLightbox && fullSrc) {
                 onOpenLightbox(fullSrc, cert.title);
               }
             }}
           >
             <img
-              src={cert.image_url.startsWith("http") ? cert.image_url : `http://localhost:3001${cert.image_url}`}
+              src={cert.image_url.startsWith("http") ? cert.image_url : `${import.meta.env.VITE_API_URL || "http://localhost:3001"}${cert.image_url}`}
               alt={cert.title}
               className="w-full h-auto max-h-[300px] object-contain rounded group-hover:scale-105 transition-transform duration-300"
             />
@@ -1143,7 +1144,7 @@ export default function App() {
   };
 
   // --- API & ADMIN STATE ---
-  const API_URL = "http://localhost:3001";
+  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
   const [certsData, setCertsData] = useState<(typeof CERTIFICATIONS[0] & { image_url?: string })[]>(
     CERTIFICATIONS.map(c => ({ ...c, image_url: "" }))
   );
