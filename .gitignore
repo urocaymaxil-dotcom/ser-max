@@ -15,7 +15,7 @@ server/database.sqlite
 # Media uploads (user uploaded content)
 server/uploads/*
 !server/uploads/.gitkeep
-!server/uploads/*.mp3
+!server/uploads/*.*
 !public/audio/*
 !public/uploads/*
 

@@ -741,6 +741,12 @@ function CertModal({
               src={cert.image_url.startsWith("http") ? cert.image_url : `${import.meta.env.VITE_API_URL || (typeof window !== "undefined" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1" ? "" : "http://localhost:3001")}${cert.image_url}`}
               alt={cert.title}
               className="w-full h-auto max-h-[300px] object-contain rounded group-hover:scale-105 transition-transform duration-300"
+              onError={(e) => {
+                const target = e.currentTarget;
+                if (cert.image_url && !target.src.endsWith(cert.image_url)) {
+                  target.src = cert.image_url;
+                }
+              }}
             />
 
             {/* Privacy Shield Cover for Signatures & Signatories */}
@@ -907,6 +913,15 @@ function UniversalLightboxModal({ src, title, isCertificate = false, onClose }: 
             src={src}
             style={{ transform: `scale(${zoom})`, transition: "transform 0.2s ease-out" }}
             className="max-w-full max-h-[78vh] object-contain rounded-xl shadow-2xl cursor-zoom-in"
+            onError={(e) => {
+              const target = e.currentTarget;
+              if (src.includes("/uploads/")) {
+                const clean = "/uploads/" + src.split("/uploads/")[1];
+                if (!target.src.endsWith(clean)) {
+                  target.src = clean;
+                }
+              }
+            }}
           />
 
           {/* Privacy Cover Overlay for Signatures & Signatories — ONLY FOR CERTIFICATES */}
