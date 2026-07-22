@@ -15,6 +15,9 @@ server/database.sqlite
 # Media uploads (user uploaded content)
 server/uploads/*
 !server/uploads/.gitkeep
+!server/uploads/*.mp3
+!public/audio/*
+!public/uploads/*
 
 # Environment variables & secrets
 .env

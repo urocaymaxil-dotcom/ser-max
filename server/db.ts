@@ -4,7 +4,8 @@ import path from "path";
 import bcrypt from "bcryptjs";
 import fs from "fs";
 
-const dbPath = path.join(__dirname, "database.sqlite");
+const baseDir = path.basename(__dirname) === "dist" ? path.resolve(__dirname, "..") : __dirname;
+const dbPath = path.join(baseDir, "database.sqlite");
 
 let db: Database<sqlite3.Database, sqlite3.Statement>;
 
@@ -187,11 +188,12 @@ Tagline (Spoken Ending)
     created_at: new Date().toISOString()
   };
 
-  const existingWalkStorm = await db.get("SELECT id FROM songs WHERE title LIKE ?", ["%Walk Through the Storm%"]);
+  const existingWalkStorm = await db.get("SELECT id, audio_url FROM songs WHERE title LIKE ?", ["%Walk Through the Storm%"]);
   if (existingWalkStorm) {
+    const finalAudioUrl = existingWalkStorm.audio_url || walkStormSong.audio_url;
     await db.run(
       "UPDATE songs SET title = ?, description = ?, lyrics = ?, audio_url = ? WHERE id = ?",
-      [walkStormSong.title, walkStormSong.description, walkStormSong.lyrics, walkStormSong.audio_url, existingWalkStorm.id]
+      [walkStormSong.title, walkStormSong.description, walkStormSong.lyrics, finalAudioUrl, existingWalkStorm.id]
     );
   } else {
     await db.run(
@@ -278,11 +280,12 @@ Beyond limits.`,
     created_at: new Date().toISOString()
   };
 
-  const existingRiseShine = await db.get("SELECT id FROM songs WHERE title LIKE ?", ["%Rise & Shine Beyond Limits%"]);
+  const existingRiseShine = await db.get("SELECT id, audio_url FROM songs WHERE title LIKE ?", ["%Rise & Shine Beyond Limits%"]);
   if (existingRiseShine) {
+    const finalAudioUrl = existingRiseShine.audio_url || riseAndShineSong.audio_url;
     await db.run(
       "UPDATE songs SET title = ?, description = ?, lyrics = ?, audio_url = ? WHERE id = ?",
-      [riseAndShineSong.title, riseAndShineSong.description, riseAndShineSong.lyrics, riseAndShineSong.audio_url, existingRiseShine.id]
+      [riseAndShineSong.title, riseAndShineSong.description, riseAndShineSong.lyrics, finalAudioUrl, existingRiseShine.id]
     );
   } else {
     await db.run(
@@ -378,11 +381,12 @@ Spoken Outro
     created_at: new Date().toISOString()
   };
 
-  const existingWalkSlowly = await db.get("SELECT id FROM songs WHERE title LIKE ?", ["%Walk Slowly, Never Backward%"]);
+  const existingWalkSlowly = await db.get("SELECT id, audio_url FROM songs WHERE title LIKE ?", ["%Walk Slowly, Never Backward%"]);
   if (existingWalkSlowly) {
+    const finalAudioUrl = existingWalkSlowly.audio_url || walkSlowlySong.audio_url;
     await db.run(
       "UPDATE songs SET title = ?, description = ?, lyrics = ?, audio_url = ? WHERE id = ?",
-      [walkSlowlySong.title, walkSlowlySong.description, walkSlowlySong.lyrics, walkSlowlySong.audio_url, existingWalkSlowly.id]
+      [walkSlowlySong.title, walkSlowlySong.description, walkSlowlySong.lyrics, finalAudioUrl, existingWalkSlowly.id]
     );
   } else {
     await db.run(

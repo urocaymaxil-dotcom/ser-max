@@ -673,7 +673,7 @@ function CertModal({
   token: string | null;
   onUpload: (file: File) => void;
   uploadStatus: string;
-  onOpenLightbox?: (src: string, title: string) => void;
+  onOpenLightbox?: (src: string, title: string, isCertificate?: boolean) => void;
 }) {
   const [shieldActive, setShieldActive] = useState(true);
   const [coverHeight, setCoverHeight] = useState<"25" | "35" | "45">("30");
@@ -730,15 +730,15 @@ function CertModal({
             className="relative rounded overflow-hidden border mb-2 flex justify-center bg-black/40 cursor-zoom-in group"
             style={{ borderColor: "rgba(0,200,255,0.2)" }}
             onClick={() => {
-              const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:3001";
+              const baseUrl = import.meta.env.VITE_API_URL || (typeof window !== "undefined" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1" ? "" : "http://localhost:3001");
               const fullSrc = cert.image_url?.startsWith("http") ? cert.image_url : `${baseUrl}${cert.image_url}`;
               if (onOpenLightbox && fullSrc) {
-                onOpenLightbox(fullSrc, cert.title);
+                onOpenLightbox(fullSrc, cert.title, true);
               }
             }}
           >
             <img
-              src={cert.image_url.startsWith("http") ? cert.image_url : `${import.meta.env.VITE_API_URL || "http://localhost:3001"}${cert.image_url}`}
+              src={cert.image_url.startsWith("http") ? cert.image_url : `${import.meta.env.VITE_API_URL || (typeof window !== "undefined" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1" ? "" : "http://localhost:3001")}${cert.image_url}`}
               alt={cert.title}
               className="w-full h-auto max-h-[300px] object-contain rounded group-hover:scale-105 transition-transform duration-300"
             />
@@ -799,10 +799,15 @@ function CertModal({
 }
 
 /* ─── UNIVERSAL HIGH-RES LIGHTBOX MODAL WITH PRIVACY SHIELD ── */
-function UniversalLightboxModal({ src, title, onClose }: { src: string; title?: string; onClose: () => void }) {
+function UniversalLightboxModal({ src, title, isCertificate = false, onClose }: { src: string; title?: string; isCertificate?: boolean; onClose: () => void }) {
   const [zoom, setZoom] = useState(1);
-  const [shieldActive, setShieldActive] = useState(true);
+  const isCert = Boolean(isCertificate);
+  const [shieldActive, setShieldActive] = useState(isCert);
   const [coverHeight, setCoverHeight] = useState<number>(30); // Percentage from bottom
+
+  useEffect(() => {
+    setShieldActive(Boolean(isCertificate));
+  }, [isCertificate]);
 
   return (
     <div
@@ -824,35 +829,39 @@ function UniversalLightboxModal({ src, title, onClose }: { src: string; title?: 
         </div>
 
         <div className="flex items-center gap-3 shrink-0 flex-wrap">
-          {/* Signature Cover Toggle */}
-          <button
-            type="button"
-            onClick={() => setShieldActive(!shieldActive)}
-            className={`px-3 py-1 rounded-lg text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer ${
-              shieldActive
-                ? "bg-amber-400/20 border border-amber-400/60 text-amber-300 shadow-[0_0_15px_rgba(251,191,36,0.35)]"
-                : "bg-slate-800 border border-slate-700 text-slate-400 hover:text-white"
-            }`}
-            title="Toggle Privacy Cover for Signatures & Signatory Names"
-          >
-            <Shield size={13} className={shieldActive ? "text-amber-400 animate-pulse" : ""} />
-            {shieldActive ? "🛡️ Signatures Cover: ON" : "Signatures Cover: OFF"}
-          </button>
+          {/* Signature Cover Toggle — Only for certificates with signatures */}
+          {isCertificate && (
+            <>
+              <button
+                type="button"
+                onClick={() => setShieldActive(!shieldActive)}
+                className={`px-3 py-1 rounded-lg text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer ${
+                  shieldActive
+                    ? "bg-amber-400/20 border border-amber-400/60 text-amber-300 shadow-[0_0_15px_rgba(251,191,36,0.35)]"
+                    : "bg-slate-800 border border-slate-700 text-slate-400 hover:text-white"
+                }`}
+                title="Toggle Privacy Cover for Signatures & Signatory Names"
+              >
+                <Shield size={13} className={shieldActive ? "text-amber-400 animate-pulse" : ""} />
+                {shieldActive ? "🛡️ Signatures Cover: ON" : "Signatures Cover: OFF"}
+              </button>
 
-          {shieldActive && (
-            <div className="flex items-center gap-1 bg-black/50 p-1 rounded-lg border border-amber-500/30 text-[10px] font-mono text-amber-200">
-              <span className="px-1 text-slate-400 uppercase">Cover Height:</span>
-              {[20, 30, 40, 50].map((pct) => (
-                <button
-                  key={pct}
-                  type="button"
-                  onClick={() => setCoverHeight(pct)}
-                  className={`px-1.5 py-0.5 rounded cursor-pointer ${coverHeight === pct ? "bg-amber-400 text-black font-bold" : "hover:bg-white/10 text-slate-300"}`}
-                >
-                  {pct}%
-                </button>
-              ))}
-            </div>
+              {shieldActive && (
+                <div className="flex items-center gap-1 bg-black/50 p-1 rounded-lg border border-amber-500/30 text-[10px] font-mono text-amber-200">
+                  <span className="px-1 text-slate-400 uppercase">Cover Height:</span>
+                  {[20, 30, 40, 50].map((pct) => (
+                    <button
+                      key={pct}
+                      type="button"
+                      onClick={() => setCoverHeight(pct)}
+                      className={`px-1.5 py-0.5 rounded cursor-pointer ${coverHeight === pct ? "bg-amber-400 text-black font-bold" : "hover:bg-white/10 text-slate-300"}`}
+                    >
+                      {pct}%
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
           )}
 
           <div className="h-4 w-px bg-slate-700" />
@@ -900,8 +909,8 @@ function UniversalLightboxModal({ src, title, onClose }: { src: string; title?: 
             className="max-w-full max-h-[78vh] object-contain rounded-xl shadow-2xl cursor-zoom-in"
           />
 
-          {/* Privacy Cover Overlay for Signatures & Signatories */}
-          {shieldActive && (
+          {/* Privacy Cover Overlay for Signatures & Signatories — ONLY FOR CERTIFICATES */}
+          {isCert && shieldActive && (
             <div
               className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-slate-950 via-slate-950/95 to-slate-900/85 backdrop-blur-lg border-t-2 border-amber-400/70 p-4 flex flex-col items-center justify-center text-center shadow-2xl z-30 pointer-events-none"
               style={{ height: `${coverHeight}%` }}
@@ -994,6 +1003,13 @@ function KaraokeStudioModal({
           <audio
             ref={audioRef}
             src={`${API_URL}${song.audio_url}`}
+            onError={(e) => {
+              const target = e.currentTarget;
+              if (song.audio_url?.startsWith("/uploads/") && !target.src.includes("/audio/")) {
+                target.src = song.audio_url.replace("/uploads/", "/audio/");
+                target.play().catch(() => {});
+              }
+            }}
             onTimeUpdate={() => {
               if (audioRef.current) setCurrentTime(audioRef.current.currentTime);
             }}
@@ -1129,7 +1145,7 @@ export default function App() {
   const [activeCert, setActiveCert] = useState<typeof CERTIFICATIONS[0] & { image_url?: string } | null>(null);
   const [showAllTrainings, setShowAllTrainings] = useState(false);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
-  const [lightboxImage, setLightboxImage] = useState<{ src: string; title: string } | null>(null);
+  const [lightboxImage, setLightboxImage] = useState<{ src: string; title: string; isCertificate?: boolean } | null>(null);
   const [activeSection, setActiveSection] = useState<string | null>(null);
 
   const openSection = (sectionId: string) => {
@@ -1144,7 +1160,7 @@ export default function App() {
   };
 
   // --- API & ADMIN STATE ---
-  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
+  const API_URL = import.meta.env.VITE_API_URL || (typeof window !== "undefined" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1" ? "" : "http://localhost:3001");
   const [certsData, setCertsData] = useState<(typeof CERTIFICATIONS[0] & { image_url?: string })[]>(
     CERTIFICATIONS.map(c => ({ ...c, image_url: "" }))
   );
@@ -1180,7 +1196,271 @@ export default function App() {
   const [isChangingPass, setIsChangingPass] = useState(false);
 
   // Songs & Audio Player State
-  const [songsData, setSongsData] = useState<any[]>([]);
+  const DEFAULT_INSPIRATIONAL_SONGS = [
+    {
+      id: 1,
+      title: "Walk Through the Storm",
+      description: "Original Inspirational Song by SER MAX — A powerful message of hope, endurance, and faith for everyone facing silent battles.",
+      audio_url: "/uploads/walk_through_the_storm.mp3",
+      lyrics: `Verse 1
+
+There are days the sky turns gray,
+When every dream feels far away.
+Your tired heart begins to break,
+Wondering how much more it can take.
+
+The road is long, the climb is steep,
+Some scars are hidden, buried deep.
+But every tear you've cried before,
+Is building someone stronger than before.
+
+Pre-Chorus
+
+So don't let go, don't lose your flame,
+The world will know your name someday.
+The night may last a little while,
+But morning always finds a smile.
+
+Chorus
+
+Keep fighting, even when you're tired,
+Even when your hope has lost its fire.
+One more step, one more prayer,
+Someone believes you're getting there.
+
+The mountain bows to those who stay,
+Who never quit along the way.
+Your story isn't over yet,
+The sun still rises, don't forget.
+
+Keep fighting...
+Your breakthrough's closer than you think.
+
+Verse 2
+
+You've carried burdens no one sees,
+Still standing through the strongest breeze.
+The strongest souls aren't born from ease,
+They're shaped by storms and victories.
+
+It's okay to stop and breathe,
+To rest beneath the quiet trees.
+Rest is not the same as fear,
+You'll stand again, your purpose's near.
+
+Bridge
+
+If your hands are shaking,
+Lift them anyway.
+
+If your eyes are crying,
+Look toward another day.
+
+Every heartbeat whispers,
+"You were made for more."
+
+The battle isn't ending—
+It's opening a new door.
+
+Final Chorus
+
+Keep fighting, even when you're broken,
+Even when no hopeful words are spoken.
+You're stronger than yesterday,
+And brighter with each passing day.
+
+No storm can steal what God has planned,
+No fear can stop a faithful stand.
+Walk slowly if you need to do,
+Just never stop believing you.
+
+Outro
+
+When your strength is almost gone,
+Borrow hope until the dawn.
+
+When you cannot run...
+Walk.
+
+When you cannot walk...
+Crawl.
+
+But never...
+Never turn back.
+
+Because tomorrow
+might become
+the day
+your miracle begins.
+
+Tagline (Spoken Ending)
+
+"To everyone carrying silent battles... You are seen. You are valued. Rest if you must—but never surrender. Walk slowly if you need to, but never walk backward. Your story is still being written."`
+    },
+    {
+      id: 2,
+      title: "Rise & Shine Beyond Limits",
+      description: "Original Inspirational Song by SER MAX — An uplifting anthem about perseverance, education, leadership, and lighting the way for others.",
+      audio_url: "/uploads/rise_and_shine_beyond_limits.mp3",
+      lyrics: `Verse 1
+
+From quiet dreams to brighter days,
+Every challenge shaped my ways.
+Through every lesson, every climb,
+I found my purpose one step at a time.
+
+From classroom halls to open skies,
+Knowledge gives our dreams their rise.
+We learn, we lead, we lift as one,
+Until tomorrow's race is won.
+
+Pre-Chorus
+
+The road is long, the night is cold,
+But every heart is made of gold.
+Stand back up, don't fear the fall,
+Your greatest chapter starts with one small call.
+
+Chorus
+
+Rise and shine beyond the limits,
+Break the walls and never quit.
+Light the future, lead the way,
+Turn your dreams into today.
+
+Lift another, hold the line,
+Your success can help others shine.
+Together we can change the world,
+One brave heart, one dream unfurled.
+
+Verse 2
+
+Every failure taught me grace,
+Every setback built my pace.
+The strongest people aren't the ones
+Who never fall beneath the sun.
+
+They're the souls who choose to stand,
+Helping others lend a hand.
+Building hope where fear once stayed,
+Lighting paths that never fade.
+
+Bridge
+
+Teach with wisdom.
+Lead with heart.
+Serve with courage.
+Dream your part.
+
+When the world says "You can't win,"
+Answer with the strength within.
+
+The future isn't built by chance,
+It's built by those who choose to advance.
+
+Final Chorus
+
+Rise and shine beyond the limits,
+Every dream is worth the risk.
+Lead with kindness, stand up tall,
+Your light was never meant to fall.
+
+Inspire minds and change a life,
+Turn every struggle into light.
+Together we can leave our mark,
+Be the flame that lights the dark.
+
+Rise and shine...
+Beyond limits.`
+    },
+    {
+      id: 3,
+      title: "Walk Slowly, Never Backward",
+      description: "Original Anthem by SER MAX — An Anthem of Hope, Purpose, and Courage. Encouraging everyone to walk with faith, lift others, and keep moving forward.",
+      audio_url: "/uploads/walk_slowly_never_backward.mp3",
+      lyrics: `Verse 1
+
+When the mountain stands before my eyes,
+And every dream feels far beyond the skies,
+I'll carry hope with every step I take,
+For every challenge helps my spirit wake.
+
+From humble roads where silent dreamers start,
+To classrooms shaping every hopeful heart,
+I learned that greatness isn't found in speed,
+But in the strength to rise when others need.
+
+Pre-Chorus
+
+The night may whisper, "You should let it go,"
+But deep inside, my faith still softly grows.
+Every lesson, every scar I've known,
+Has built the path that leads me home.
+
+Chorus
+
+I will walk slowly, but I'll never walk backward,
+Every step I take will make tomorrow brighter.
+Through every storm, through every trial,
+I'll keep believing mile by mile.
+
+I'll lift the ones who lost their way,
+And help them find a brighter day.
+Together we can rise much higher,
+One heart, one hope, one endless fire.
+
+Verse 2
+
+I've seen the weight of weary eyes,
+The silent tears, the hidden cries.
+So if you're tired, then rest awhile,
+But never lose your reason to smile.
+
+Knowledge grows when kindness leads,
+Hope is planted through our deeds.
+The strongest light the world can see,
+Begins with those who choose to believe.
+
+Bridge
+
+Keep learning.
+Keep serving.
+Keep leading.
+Keep believing.
+
+The world is changed by those who care,
+Who choose to love, who choose to share.
+
+No dream is small.
+No life is weak.
+The future belongs
+To those who seek.
+
+Final Chorus
+
+I will walk slowly, but I'll never walk backward,
+Every sunrise brings another answer.
+I'll stand for truth, I'll stand for hope,
+I'll teach the world we're built to cope.
+
+Through every heart that I inspire,
+May courage burn like endless fire.
+Our greatest legacy will be,
+The lives we changed... faithfully.
+
+Walk slowly...
+
+Never backward...
+
+Keep moving forward.
+
+Spoken Outro
+
+"Success is not about reaching the finish line before everyone else. It is about moving forward with purpose, lifting others along the way, and leaving every life you touch better than you found it. Walk slowly if you must—but never walk backward."`
+    }
+  ];
+
+  const [songsData, setSongsData] = useState<any[]>(DEFAULT_INSPIRATIONAL_SONGS);
   const [currentSongIndex, setCurrentSongIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [activeLyricsSong, setActiveLyricsSong] = useState<any | null>(null);
@@ -1247,10 +1527,12 @@ export default function App() {
       const res = await fetch(`${API_URL}/api/songs`);
       if (res.ok) {
         const data = await res.json();
-        setSongsData(data);
+        if (Array.isArray(data) && data.length > 0) {
+          setSongsData(data);
+        }
       }
     } catch (e) {
-      console.warn("Could not load songs from API:", e);
+      console.warn("Could not load songs from API, using default songs fallback:", e);
     }
   };
 
@@ -2802,6 +3084,13 @@ export default function App() {
                           controls
                           src={`${API_URL}${songsData[currentSongIndex].audio_url}`}
                           className="w-full sm:w-auto min-w-[280px] rounded-lg"
+                          onError={(e) => {
+                            const current = songsData[currentSongIndex];
+                            const target = e.currentTarget;
+                            if (current?.audio_url?.startsWith("/uploads/") && !target.src.includes("/audio/")) {
+                              target.src = current.audio_url.replace("/uploads/", "/audio/");
+                            }
+                          }}
                           onPlay={() => setIsPlaying(true)}
                           onPause={() => setIsPlaying(false)}
                           onEnded={() => setIsPlaying(false)}
@@ -3712,6 +4001,7 @@ export default function App() {
         <UniversalLightboxModal
           src={lightboxImage.src}
           title={lightboxImage.title}
+          isCertificate={lightboxImage.isCertificate}
           onClose={() => setLightboxImage(null)}
         />
       )}

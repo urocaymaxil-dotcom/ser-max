@@ -18,12 +18,20 @@ const JWT_SECRET = process.env.JWT_SECRET || "super-secret-mscs-candidate-portfo
 app.use(cors({ origin: "*" })); // Allow frontend calls from anywhere
 app.use(express.json());
 
-// Create uploads directory if it doesn't exist
-const uploadsDir = path.join(__dirname, "uploads");
+// Resolve root directory of server package whether running via ts-node (__dirname === server) or node dist/server.js (__dirname === server/dist)
+const baseDir = path.basename(__dirname) === "dist" ? path.resolve(__dirname, "..") : __dirname;
+const uploadsDir = path.join(baseDir, "uploads");
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
-app.use("/uploads", express.static(uploadsDir));
+app.use("/uploads", express.static(uploadsDir, {
+  acceptRanges: true,
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith(".mp3")) {
+      res.setHeader("Content-Type", "audio/mpeg");
+    }
+  }
+}));
 
 // Multer Config for uploads
 const storage = multer.diskStorage({
@@ -375,6 +383,18 @@ app.delete("/api/songs/:id", authenticateToken, async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+// Serve static frontend build if root dist folder exists
+const frontendDistDir = path.resolve(baseDir, "../dist");
+if (fs.existsSync(frontendDistDir)) {
+  app.use(express.static(frontendDistDir));
+  app.get("*", (req, res, next) => {
+    if (req.path.startsWith("/api") || req.path.startsWith("/uploads")) {
+      return next();
+    }
+    res.sendFile(path.join(frontendDistDir, "index.html"));
+  });
+}
 
 // Main startup
 async function startServer() {
